@@ -25,4 +25,13 @@ In order to avoid excessive dependencies, simply download this repository and pl
 Usage
 -----
 
-Review the examples, this should give you the basic run down of how an entire application is composed using this router.
+Review the examples, this should give you the basic run down of how an entire application is composed using this router. For best results, use with Nginx as the processing speeds are already so fast that Apache alone is doubling the request latency.
+
+With Nginx, add this to your server block
+`try_files $uri $uri/ /index.php?$args;`
+
+With Apache, add this to the server or .htaccess file
+`RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule . index.php [L]`
