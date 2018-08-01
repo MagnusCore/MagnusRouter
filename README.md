@@ -2,7 +2,7 @@
 
 Router implementations for MagnusCore based on Dispatch protocol
 
-    © 2017 MagnusCore and contributors.
+    © 2017 - 2018 MagnusCore and contributors.
 
     https://github.com/MagnusCore/MagnusRouter
 
