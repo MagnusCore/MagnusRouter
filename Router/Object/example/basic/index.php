@@ -23,7 +23,30 @@ $obj        = $rootObject;
 $isEndpoint = false;
 
 foreach ($router($context, $rootObject, $requestPath) as list($previous, $obj, $isEndpoint)) {
-	if ($isEndpoint) { break; }
+	//Object router requires us to provide it with an object to inspect for next possible routes or endpoints
+	if (!is_object($obj)) {
+
+		if ($context['debug'] && $logger) {
+			$logger->debug('Provided is not currently an object', [
+				'provided'         => $obj,
+				'context'          => $context
+			]);
+		}
+		
+		if (class_exists($obj)) {
+
+			if ($context['debug'] && $logger) {
+				$logger->debug('Instantiating object reference', [
+					'object reference' => $obj,
+					'context'          => $context
+				]);
+			}
+
+			$obj = new $obj($context);
+
+		}
+
+	}
 }
 
 //Response preparation

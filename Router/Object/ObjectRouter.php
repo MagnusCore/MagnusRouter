@@ -56,39 +56,15 @@ namespace MagnusRouter\Router\Object {
 				if (!is_object($obj)) {
 
 					if ($context['debug'] && $this->logger) {
-						$this->logger->debug('Provided is not currently an object', [
-							'object reference' => $obj,
-							'context'          => $context,
-							'current'          => $current
+						$this->logger->debug('Refusing to descend on non-objects, must be a static endpoint or function.', [
+							'passed'  => $obj,
+							'context' => $context,
+							'current' => $current
 						]);
 					}
 
-					if (class_exists($obj)) {
-
-						if ($context['debug'] && $this->logger) {
-							$this->logger->debug('Instantiating object reference', [
-								'object reference' => $obj,
-								'context'          => $context,
-								'current'          => $current
-							]);
-						}
-
-						$obj = new $obj($context);
-
-					} else {
-
-						if ($context['debug'] && $this->logger) {
-							$this->logger->debug('Refusing to descend on non-objects, must be a static endpoint or function.', [
-								'passed'  => $obj,
-								'context' => $context,
-								'current' => $current
-							]);
-						}
-
-						yield [$previous, $obj, true];
-						return;
-
-					}
+					yield [$previous, $obj, true];
+					return;
 
 				}
 
