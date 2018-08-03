@@ -1,28 +1,61 @@
 <?php
+if (!function_exists('getallheaders'))  {
+    function getallheaders()
+    {
+        if (!is_array($_SERVER)) {
+            return array();
+        }
+        $headers = array();
+        foreach ($_SERVER as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
+                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+            }
+        }
+        return $headers;
+    }
+}
 
-require_once 'autoload.php'; //application autoloader
+$documentRoot = __DIR__;
+$serverRoot   = dirname(__DIR__);
+$viewRoot     = $serverRoot . '/src/views/';
+$vendorRoot   = $serverRoot . '/vendor';
 
-/* Request parsing, assuming HTTP requests */
-$webRoot      = str_replace($_SERVER['DOCUMENT_ROOT'], '', __DIR__);
+require_once($serverRoot . '/app/autoload.php');
+$config       = require_once($serverRoot . '/app/config/appEnv.php');
+
 $requestPath  = $_SERVER['REQUEST_URI'];
-$requestPath  = explode('/', str_replace($webRoot, '', $requestPath));
-$requestPath  = array_values(array_filter($requestPath));
-$assetRoot    = $webRoot . '/assets';
+$path         = explode('/', str_replace($documentRoot, '', $requestPath));
+$path         = array_values(array_filter($path));
 
-$context = [
-	'debug' => false
-];
+$queryFields  = isset($_GET) ? $_GET : array();
+$postFields   = isset($_POST) ? $_POST : array();
+
+$context = array(
+	'debug'     => $config['debug'],
+	'config'    => $config,
+	'assetRoot' => $documentRoot . '/assets',
+	'request'   => array(
+		'path'    => $path,
+		'uri'     => $requestPath,
+		'method'  => strtolower($_SERVER['REQUEST_METHOD']),
+		'query'   => $queryFields,
+		'post'    => $postFields,
+		'headers' => getallheaders()
+	)
+);
 
 $logger     = new \Loggers\ScreenLogger();
-$router     = new \Router\Object\ObjectRouter($context, $logger);
-$rootObject =  new \Controllers\RootController($context);
+$router     = new \MagnusRouter\Router\Object\ObjectRouter($context, $logger);
+$rootObject =  new \Http\Controllers\RootController($context);
+
+$context['logger'] = $logger;
 
 $previous   = null;
 $current    = null;
 $obj        = $rootObject;
 $isEndpoint = false;
 
-foreach ($router($context, $rootObject, $requestPath) as list($previous, $obj, $isEndpoint)) {
+foreach ($router($context, $rootObject, $path) as list($previous, $obj, $isEndpoint)) {
 	//Object router requires us to provide it with an object to inspect for next possible routes or endpoints
 	if (!is_object($obj)) {
 
@@ -47,10 +80,12 @@ foreach ($router($context, $rootObject, $requestPath) as list($previous, $obj, $
 		}
 
 	}
+	
+	if ($isEndpoint) { break; }
 }
 
 //Response preparation
-$response = ['view' => 'error/noResource', 'context' => $context, 'assetRoot' => $assetRoot];
+$response = ['view' => 'error/noResource', 'context' => $context];
 $dispatchResponse = null;
 
 //Dispatch, to be factored out into own package
@@ -130,4 +165,6 @@ if ($isEndpoint) {
 
 }
 
-if (!is_null($dispatchResponse)) { echo var_export($dispatchResponse, true) . '<br>'; }
+if (!is_null($dispatchResponse)) {
+	echo var_export($dispatchResponse, true) . '<br>';
+}
